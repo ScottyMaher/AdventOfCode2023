@@ -1,0 +1,6 @@
+*.txt
+*.dSYM
+.DS_Store
+.vscode
+
+day5_other.py
