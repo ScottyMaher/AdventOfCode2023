@@ -1,7 +1,7 @@
 import re
 import numpy as np
 
-with open("./Day5/problem_5_puzzle_input.txt", "r") as f:
+with open("./Day5/day5.txt", "r") as f:
     puzzle_input = f.read()
 
 
@@ -38,13 +38,6 @@ def determineOverlap(interval1, interval2):
         input_range_start = output_range_start
         intervals.append((output_range_start - delta1, input_range_end - delta1))
     intervals.append((output_range_start - delta2, output_range_end - delta2))
-
-
-def generateNewRangesForNextLayer():
-    pass
-
-
-
 
 
 
@@ -93,6 +86,7 @@ def preorder(test_interval, maps, level):
         print(intervals, end=" ")
         preorder(intervals, maps, level + 1)
 
+global_recursion_counter = 0
 
 def part2(puzzle_input):
     segments = puzzle_input.split("\n\n")
@@ -103,6 +97,13 @@ def part2(puzzle_input):
         x1, dx = map(int, seed)
         x2 = x1 + dx
         intervals.append((x1, x2))
+    
+    # intervals.remove((773371046, 1173953143))
+    # intervals.remove((2246524522, 2400349118))
+    # intervals.remove((2054637767, 2217619900))
+    # intervals.remove((2473628355, 3319998950))
+
+    # intervals = [(1587291972, 1588291972)]
 
     min_location = float("inf")
 
@@ -122,7 +123,6 @@ def part2(puzzle_input):
     # # sort the rows in the matrix by the first column
     conversionMaps[0] = conversionMaps[0][conversionMaps[0][:, 0].argsort()]
 
-    # print(conversionMaps)
 
     # Step 1: Sort the first layer, as this determines the order of exploration of the tree, this only needs to be done once
     # Step 2: Within a for loop, pop the first element and pass it to the reccursive function
@@ -161,50 +161,81 @@ def part2(puzzle_input):
     # print("answer is: ", testReccursiveFunction([1, 20], 1))
 
     def reccursiveFunction(prev_input, current_layer):
+
         if current_layer == 7:
-            print("got to the end with: ", prev_input)
+            global global_recursion_counter
+            global_recursion_counter += 1
+            lowest_answer = float("inf")
             for interval in intervals:
-                if (interval[0] <= prev_input[1] and interval[1] >= prev_input[1]) or (interval[0] <= prev_input[1] + prev_input[2] and interval[1] >= prev_input[1] + prev_input[2]):
-                    print("found match", interval)
-                    return interval
-            print("no match found")
-            return
+                if (interval[0] <= prev_input[1] and interval[1] >= prev_input[1]):
+                    print("Found match in interval: ", interval, " with prev_input: ", prev_input)
+                    return prev_input[1]
+                if prev_input[1] < interval[0] and (prev_input[1] + prev_input[2]) > interval[0]:
+                    lowest_answer = interval[0]
+                    
+            if lowest_answer != float("inf"):
+                print("Found match in interval: ", interval, " with prev_input: ", prev_input)
+                return lowest_answer
+
+            print("No match found, got to the end with: ", prev_input)
+            return False
         
         mappings = conversionMaps[current_layer]
 
-        closest_lower_match = [0, 0, 0]
-        for test in mappings:
-            # print("test: ", test)
+        while prev_input != []:
+            closest_lower_match = None
+            diff = None
+            closest_upper_match = float("inf")
 
-            if prev_input[1] == test[0]:
-                print("found match")
-                break
-            elif test[0] < prev_input[1] and test[0] >= closest_lower_match[0]:
-                # dont need to check if the (test[0] + test[2]) is less than prev_input[1] since all mappings are connected, therefore we would find a closer one if it existed
-                closest_lower_match = test
-                continue
+            for test in mappings:
+                if (test[0] <= prev_input[1] and prev_input[1] < (test[0] + test[2])):
+                    closest_lower_match = test
+                    diff = closest_lower_match[1] - closest_lower_match[0]
+                    break
+                elif test[0] < closest_upper_match and test[0] > prev_input[1]:
+                    closest_upper_match = test[0]
+                    continue
 
-        # now need to do some splitting based on the range of the prev_input and the closest_lower_match
-        diff = closest_lower_match[1] - closest_lower_match[0]
-        if prev_input[1] + prev_input[2] > closest_lower_match[0] + closest_lower_match[2]:
-            new_input = np.array([0, prev_input[1] + diff, (closest_lower_match[0] + closest_lower_match[2]) - prev_input[1]])
-            # prev_input[2] = (prev_input[1] + prev_input[2]) - (closest_lower_match[0] + closest_lower_match[2])
-            # prev_input[1] = closest_lower_match[0] + closest_lower_match[2]
-            print("\nnew input1: ", new_input, current_layer)
-            # print("\nprev input: ", prev_input)
-            return reccursiveFunction(new_input, current_layer + 1)
-        elif prev_input[1] + prev_input[2] <= closest_lower_match[0] + closest_lower_match[2]:
-            new_input = np.array([0, prev_input[1] + diff, prev_input[2]])
-            # prev_input[2] = (closest_lower_match[0] + closest_lower_match[2]) - (prev_input[1] + prev_input[2])
-            # prev_input[1] = prev_input[1] + prev_input[2]
-            print("\nnew input2: ", new_input, current_layer)
-            # print("\nprev input: ", prev_input)
-            return reccursiveFunction(new_input, current_layer + 1)
+            if closest_lower_match is None:
+                closest_lower_match = [prev_input[1], None, closest_upper_match - prev_input[1]]
+                diff = 0
 
-        # print("\nnew input: ", prev_input[1], prev_input[1] + prev_input[2], closest_lower_match[0] + closest_lower_match[2], "\nmin match: ", closest_lower_match)
+            # if upper bound of input range is greater than upper bound of closest_lower_match
+            new_input = []
+            if prev_input[1] + prev_input[2] > closest_lower_match[0] + closest_lower_match[2]:
+                # split the input into two, update prev_input to be the higher range, and pass the converted lower range to the reccursive function
+                new_input = [0, prev_input[1] + diff, (closest_lower_match[0] + closest_lower_match[2]) - prev_input[1]]
+                prev_input[2] = (prev_input[1] + prev_input[2]) - (closest_lower_match[0] + closest_lower_match[2])
+                prev_input[1] = closest_lower_match[0] + closest_lower_match[2]
+                print("Split performed: ", new_input, current_layer)
+                # print("\nprev input: ", prev_input)
+                # return reccursiveFunction(new_input, current_layer + 1)
+            # else if upper bound of input range is less than or equal to upper bound of closest_lower_match
+            elif prev_input[1] + prev_input[2] <= closest_lower_match[0] + closest_lower_match[2]:
+                # then simply perform the conversion as is, without splitting
+                new_input = [0, prev_input[1] + diff, prev_input[2]]
+                prev_input = []
+                # prev_input[2] = (closest_lower_match[0] + closest_lower_match[2]) - (prev_input[1] + prev_input[2])
+                # prev_input[1] = prev_input[1] + prev_input[2]
+                print("No split needed: ", new_input, current_layer)
+                # print("\nprev input: ", prev_input)
+                # return reccursiveFunction(new_input, current_layer + 1)
+            
+            foundMatch = reccursiveFunction(new_input, current_layer + 1)
+            if foundMatch:
+                return foundMatch
 
+        return False
+
+    print("Beginning reccusive search...")
+    answer = None
+    for tests in conversionMaps[0]:
+        new_input = [tests[0], tests[1], tests[2]]
+        answer = reccursiveFunction(new_input, 1)
+        if answer:
+            break
     
-    # reccursiveFunction(conversionMaps[0][0], 1)
+    # print("\nAnswer is: ", answer)
 
     intervals = np.array(intervals)
     intervals = intervals[intervals[:, 0].argsort()]
@@ -221,7 +252,7 @@ def part2(puzzle_input):
                     test_input += destination - start
                     # print("X after conversion: ", test_input)
                     break
-        print("Final bottom output: ", test_input)
+        print("\nFinal bottom output: ", test_input)
     
     def testMappingUp(test_input, mappingIndexRange=range(0, 7)):
         for i in mappingIndexRange:
@@ -239,10 +270,11 @@ def part2(puzzle_input):
     # print(conversionMaps[0], "\n\n")
     # 2919902
 
-    x = 1108003799
-    # testMappingDown(920707452, range(6, -1, -1))
+    testMappingDown(answer, range(6, -1, -1))
 
-    # testMappingUp(60568880, range(0, 7))
+    print("\nTotal reccursion count: ", global_recursion_counter)
+
+    # testMappingUp(3846000000, range(0, 7))
 
     # print(1184826596 + 60568879)
 
@@ -324,6 +356,7 @@ def part3(puzzle_input):
 
 # print("Part 1:", part1(puzzle_input))
 # print("Part 2:", part2(puzzle_input))
+print("\n")
 part2(puzzle_input)
 # print(
 #     "\nPart 2:",
