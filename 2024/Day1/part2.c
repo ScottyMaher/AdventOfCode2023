@@ -114,7 +114,7 @@ bool delete_key(int32_t key) {
   return false;
 }
 
-int32_t main(void) {
+int main(void) {
   int32_t left[MAX_PAIRS], right[MAX_PAIRS];
   uint32_t count = 0;
 

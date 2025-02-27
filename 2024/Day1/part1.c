@@ -72,7 +72,7 @@ void iterativeQuickSort(uint32_t arr[], uint32_t n) {
   }
 }
 
-int32_t main(void) {
+int main(void) {
   uint32_t left[MAX_PAIRS], right[MAX_PAIRS];
   uint32_t count = 0;
 
