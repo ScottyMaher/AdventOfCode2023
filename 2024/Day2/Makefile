@@ -1,5 +1,6 @@
 CC = clang
-CFLAGS = -Wall -Wextra -O2 -std=c11 -g
+CFLAGS = -Wall -Wextra -std=c11 -g
+# CFLAGS = -Wall -Wextra -O2 -std=c11 -g
 # Optimised build flags:
 # CFLAGS = -Wall -Wextra -O3 -flto -march=native -DNDEBUG -std=c11
 
